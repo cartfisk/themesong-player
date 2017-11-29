@@ -23,5 +23,8 @@
   "bugs": {
     "url": "https://github.com/cartfisk/http-gimbal/issues"
   },
-  "homepage": "https://github.com/cartfisk/http-gimbal#readme"
+  "homepage": "https://github.com/cartfisk/http-gimbal#readme",
+  "dependencies": {
+    "castv2-client": "^1.2.0"
+  }
 }

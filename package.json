@@ -25,6 +25,9 @@
   },
   "homepage": "https://github.com/cartfisk/http-gimbal#readme",
   "dependencies": {
-    "castv2-client": "^1.2.0"
+    "body-parser": "^1.18.2",
+    "castv2-client": "^1.2.0",
+    "express": "^4.16.2",
+    "mongoose": "^4.13.5"
   }
 }

@@ -28,6 +28,6 @@
     "body-parser": "^1.18.2",
     "castv2-client": "^1.2.0",
     "express": "^4.16.2",
-    "mongoose": "^4.13.5"
+    "redis": "^2.8.0"
   }
 }

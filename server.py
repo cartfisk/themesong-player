@@ -74,8 +74,9 @@ def cast(mac_address, target='Kitchen'):
     if target_cc:
         target_cc.wait()
         redis = Cache()
-        user = json.loads(redis.get(mac_address))
+        user = redis.get(mac_address)
         if user is not None:
+            user = json.loads(user)
             try:
                 mc = target_cc.media_controller
                 audio = user['audio']

@@ -1,8 +1,10 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
+from threading import Thread
 import redis
 import json
 import pychromecast
 import random
+import time
 
 app = Flask(__name__)
 
@@ -13,11 +15,19 @@ GREETINGS = ["{name} is in da house!",
              "{name} gives a BIG WAVE!",
              "{name} is in!",
              "{name} is coming out to party!",
-             "A disturbance in the force... it must be {name}"]
+             "{name} is seen wandering the corridors",
+             "{name} makes a grand entrance!",
+             "{name} can't wait to start the day!",
+             "Welcome back, {name}! We've missed you."
+             "A wild {name} appears!"]
 
 LOCK_FORMAT = '%s-lock-status'
 
 DEVICE_SET = {"Kitchen", "Home Alone", "Ferris Bueller", "Blues Brothers"}
+
+SEEN_FORMAT = '%s-seen'
+
+TTL_EXPIRE = 60 * 60 * 18
 
 
 class Cache(object):
@@ -27,9 +37,20 @@ class Cache(object):
         return getattr(self.db, name)
 
 
+def fade(cc, mc):
+    for _ in xrange(10):
+        cc.volume_up()
+        time.sleep(0.75)
+    time.sleep(35)
+    for _ in xrange(10):
+        cc.volume_down()
+        time.sleep(0.25)
+    mc.skip()
+
+
 @app.route('/')
 def index():
-    return 'Welcome to the Chromecast Emulsion API'
+    return render_template('index.html')
 
 
 @app.route('/v1/devices', methods=['GET', 'POST'])
@@ -66,10 +87,16 @@ def cast(mac_address, target='Kitchen'):
     target_cc = device_map.get(target)
 
     redis = Cache()
+
     lk = LOCK_FORMAT % (target)
     locked = int(redis.get(lk) or False)
     if locked:
         return jsonify({'status_code': 400, 'error': 'Cannot cast, device is locked'})
+
+    sk = SEEN_FORMAT % (mac_address)
+    seen = int(redis.get(sk) or False)
+    if seen:
+        return jsonify({'status_code': 200, 'data': {'info': '%s has already been casted today.' % (mac_address)}})
 
     if target_cc:
         target_cc.wait()
@@ -84,6 +111,9 @@ def cast(mac_address, target='Kitchen'):
                               'music/mp3',
                               title=random.choice(GREETINGS).format(**user),
                               thumb='http://www.4cinsights.com/wp-content/uploads/2016/02/4C_Logo_New.png')
+                redis.setex(sk, TTL_EXPIRE, 1)
+                thread = Thread(target=fade, args=(target_cc, mc))
+                thread.start()
                 return jsonify({'status_code': 200, 'data': 'Playing theme for %s' % (user.get('name', '__THE_ONE_FROM_THE_DATABASE__'))})
             except Exception as e:
                 print e
@@ -97,12 +127,18 @@ def cast(mac_address, target='Kitchen'):
 @app.route('/v1/users', methods=['POST'])
 def create_user():
     redis = Cache()
-    data = request.json
+    if request.json:
+        data = request.json
+    elif request.form:
+        data = request.form
     print 'Attempting to create user: %s' % data
     try:
+        address = data['address']
+        if address in ['', None]:
+            raise ValueError
         redis.set(data['address'], json.dumps(data))
         return jsonify({'status_code': 200, 'data': data})
-    except KeyError:
+    except (KeyError, ValueError):
         return jsonify({'status_code': 400, 'error': 'MAC Address not provided'})
     except Exception as e:
         print e

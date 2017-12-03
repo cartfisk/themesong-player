@@ -18,7 +18,7 @@ GREETINGS = ["{name} is in da house!",
              "{name} is seen wandering the corridors",
              "{name} makes a grand entrance!",
              "{name} can't wait to start the day!",
-             "Welcome back, {name}! We've missed you."
+             "Welcome back, {name}! We've missed you.",
              "A wild {name} appears!"]
 
 LOCK_FORMAT = '%s-lock-status'

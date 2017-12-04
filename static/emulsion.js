@@ -18,13 +18,13 @@ function handleKeyDown(e) {
         break;
       case 'q1':
         if (window.admin) {
-          get('http://0.0.0.0:8080/v1/devices/lock/Kitchen', function() { console.log('Kitchen Chromecast is now LOCKED.'); });
+          get('v1/devices/lock/Kitchen', function() { console.log('Kitchen Chromecast is now LOCKED.'); });
         }
         purgeBuffer();
         break;
       case 'q2':
         if (window.admin) {
-          get('http://0.0.0.0:8080/v1/devices/unlock/Kitchen', function() { console.log('Kitchen Chromecast is now UNLOCKED.'); });
+          get('v1/devices/unlock/Kitchen', function() { console.log('Kitchen Chromecast is now UNLOCKED.'); });
         }
         purgeBuffer();
         break;

@@ -27,7 +27,7 @@ DEVICE_SET = {"Kitchen", "Home Alone", "Ferris Bueller", "Blues Brothers"}
 
 SEEN_FORMAT = '%s-seen'
 
-TTL_EXPIRE = 60 * 60 * 18
+TTL_EXPIRE = 60 * 60 * 16  # reset every 16 hours.
 
 
 class Cache(object):
@@ -41,7 +41,7 @@ def fade(cc, mc):
     for _ in xrange(10):
         cc.volume_up()
         time.sleep(0.75)
-    time.sleep(35)
+    time.sleep(50)
     for _ in xrange(10):
         cc.volume_down()
         time.sleep(0.25)
@@ -168,4 +168,4 @@ def delete_user(mac_address):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    app.run(host='0.0.0.0', port=8080, debug=True)

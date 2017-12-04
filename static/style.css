@@ -1,8 +1,13 @@
 body {
-  font-family: sans-serif;
-  font-style: italic;
+  font-family: monospace;
   background: #EEF3E2;
   color: #00688B;
+
+}
+
+@keyframes fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
 }
 
 .page {
@@ -11,29 +16,40 @@ body {
   justify-content: center;
   align-items: center;
   margin: auto 0;
+  animation: fadein 1.5s;
 }
 
 .title {
   font-size: 32px;
   font-weight: bold;
-  font-style: italic;
   padding: 15px 10%;
-  border-bottom: 1px black solid;
+  cursor: default;
 }
 
 .input-wrap, .info {
   display: flex;
   padding: 15px 10%;
-  border-bottom: 1px black solid;
+  border-top: 1px #00688B solid;
+  border-bottom: 1px #00688B solid;
 }
 
 input {
+  font-size: 16px;
   width: 100%;
-  padding: 10px 25px;
+  padding: 8px 8px;
   margin: 8px 0;
   box-sizing: border-box;
   border-style: groove;
   border-radius: 8px;
+}
+
+input:hover {
+  border: 2px solid #048EBD;
+}
+
+input:focus {
+  outline: unset;
+  border: 2px solid #048EBD;
 }
 
 button {
@@ -43,4 +59,5 @@ button {
   font-weight: bold;
   width: 100%;
   height: 25px;
+  cursor: pointer;
 }

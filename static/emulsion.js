@@ -36,6 +36,7 @@ function handleKeyDown(e) {
 
 function get(url, callback) {
   let xmlHttp = new XMLHttpRequest();
+  xmlHttp.setRequestHeader('Access-Control-Allow-Headers', '*');
   xmlHttp.onreadystatechange = function() {
       if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
           callback ? callback(xmlHttp.responseText) : console.log('successful GET');

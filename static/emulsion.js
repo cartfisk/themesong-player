@@ -18,13 +18,13 @@ function handleKeyDown(e) {
         break;
       case 'q1':
         if (window.admin) {
-          get('http://localhost:8080/v1/devices/lock/Kitchen', function() { console.log('Kitchen Chromecast is now LOCKED.'); });
+          get('http://0.0.0.0:8080/v1/devices/lock/Kitchen', function() { console.log('Kitchen Chromecast is now LOCKED.'); });
         }
         purgeBuffer();
         break;
       case 'q2':
         if (window.admin) {
-          get('http://localhost:8080/v1/devices/unlock/Kitchen', function() { console.log('Kitchen Chromecast is now UNLOCKED.'); });
+          get('http://0.0.0.0:8080/v1/devices/unlock/Kitchen', function() { console.log('Kitchen Chromecast is now UNLOCKED.'); });
         }
         purgeBuffer();
         break;
@@ -36,7 +36,6 @@ function handleKeyDown(e) {
 
 function get(url, callback) {
   let xmlHttp = new XMLHttpRequest();
-  xmlHttp.setRequestHeader('Access-Control-Allow-Headers', '*');
   xmlHttp.onreadystatechange = function() {
       if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
           callback ? callback(xmlHttp.responseText) : console.log('successful GET');

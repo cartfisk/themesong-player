@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request, render_template
-from threading import Thread
+from pool import ThreadPool
+
 import redis as _redis
 import json
 import pychromecast
@@ -32,7 +33,10 @@ DEVICE_VOLUME_MAX = {
 
 SEEN_FORMAT = '%s-seen'
 
-TTL_EXPIRE = 60 * 60 * 4  # reset every 4 hours.
+TTL_EXPIRE = 60 * 60 * 16  # reset every 16 hours.
+
+cast_pool = ThreadPool(2)
+fade_pool = ThreadPool(1)
 
 
 class Cache(object):
@@ -70,20 +74,23 @@ def arr_fcall(targets, fname, *args, **kwargs):
                 fn(*args, **kwargs)
 
 
-def fade(targets, m_args, m_kwargs):
-    arr_fcall(targets, 'play_media', *m_args, **m_kwargs)
+def play(targets, args, kwargs):
+    for target in targets:
+        target.wait()
+        target.play_media(*args, **kwargs)
+    fade_pool.add_task(fade, targets)
+
+
+def fade(targets):
     arr_fcall(targets, 'set_volume', 0)
-    arr_fcall(targets, 'wait')
-    for _ in xrange(5):
+    for _ in xrange(4):
         arr_fcall(targets, 'volume_up')
-        time.sleep(.75)
-    time.sleep(50)
-    print '~time to shut up~'
-    for _ in xrange(5):
+    time.sleep(35)
+    for _ in xrange(4):
         arr_fcall(targets, 'volume_down')
-        time.sleep(.25)
-    arr_fcall(targets, 'set_volume', 0)
-    arr_fcall([t.media_controller for t in targets], 'stop')
+        time.sleep(.5)
+    for target in targets:
+        target.media_controller.stop()
 
 
 @app.route('/')
@@ -157,8 +164,8 @@ def cast(mac_address, targets=['Kitchen', 'GameRoom']):
     for target_cc in target_ccs:
         data.append({'info': 'Playing theme for %s on %s' % (name, target_cc.device.friendly_name)})
 
-    thread = Thread(target=fade, args=(devices, media_args, media_kwargs))
-    thread.start()
+    cast_pool.add_task(play, devices, media_args, media_kwargs)
+    cast_pool.wait()
 
     redis.setex(sk, TTL_EXPIRE, 1)
 

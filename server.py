@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request, render_template
 from threading import Thread
-import redis
+import redis as _redis
 import json
 import pychromecast
 import random
@@ -23,29 +23,67 @@ GREETINGS = ["{name} is in da house!",
 
 LOCK_FORMAT = '%s-lock-status'
 
-DEVICE_SET = {"Kitchen", "Home Alone", "Ferris Bueller", "Blues Brothers"}
+DEVICE_SET = {"Kitchen", "Home Alone", "Ferris Bueller", "Blues Brothers", "GameRoom"}
+
+DEVICE_VOLUME_MAX = {
+    "Kitchen": 4,
+    "GameRoom speaker": 5,
+}
 
 SEEN_FORMAT = '%s-seen'
 
-TTL_EXPIRE = 60 * 60 * 16  # reset every 16 hours.
+TTL_EXPIRE = 60 * 60 * 4  # reset every 4 hours.
 
 
 class Cache(object):
-    db = redis.StrictRedis(host='localhost', port=6379, db=0)
+    db = _redis.StrictRedis(host='localhost', port=6379, db=0)
+
+    def __init__(self):
+        with open('users.json', 'w') as f:
+            data = []
+            for k in self.db.keys():
+                if '-' in k or '_' in k:
+                    continue
+                try:
+                    data.append(json.loads(self.db.get(k)))
+                except Exception:
+                    continue
+            s = json.dumps(data,
+                           indent=4,
+                           sort_keys=True,
+                           separators=(',', ': '),
+                           ensure_ascii=False)
+            f.write(s)
 
     def __getattr__(self, name):
         return getattr(self.db, name)
 
 
-def fade(cc, mc):
-    for _ in xrange(10):
-        cc.volume_up()
-        time.sleep(0.75)
+chromecasts = {cc.device.friendly_name: cc for cc in pychromecast.get_chromecasts()}
+
+
+def arr_fcall(targets, fname, *args, **kwargs):
+    for t in targets:
+        if hasattr(t, fname):
+            fn = getattr(t, fname)
+            if hasattr(fn, '__call__'):
+                fn(*args, **kwargs)
+
+
+def fade(targets, m_args, m_kwargs):
+    arr_fcall(targets, 'play_media', *m_args, **m_kwargs)
+    arr_fcall(targets, 'set_volume', 0)
+    arr_fcall(targets, 'wait', 1)
+    for _ in xrange(5):
+        arr_fcall(targets, 'volume_up')
+        time.sleep(.75)
     time.sleep(50)
-    for _ in xrange(10):
-        cc.volume_down()
-        time.sleep(0.25)
-    mc.skip()
+    print '~time to shut up~'
+    for _ in xrange(5):
+        arr_fcall(targets, 'volume_down')
+        time.sleep(.25)
+    arr_fcall(targets, 'set_volume', 0)
+    arr_fcall([t.media_controller for t in targets], 'stop')
 
 
 @app.route('/')
@@ -55,9 +93,7 @@ def index():
 
 @app.route('/v1/devices', methods=['GET', 'POST'])
 def devices():
-    chromecasts = pychromecast.get_chromecasts()  # Maybe just do this once on server start? meh.
-    devices = [cc.device.friendly_name for cc in chromecasts]
-    return jsonify({'status_code': 200, 'data': devices})
+    return jsonify({'status_code': 200, 'data': chromecasts.keys()})
 
 
 @app.route('/v1/devices/lock/<target>', methods=['GET', 'POST'])
@@ -66,6 +102,11 @@ def lock(target):
     if target in DEVICE_SET:
         lk = LOCK_FORMAT % (target)
         redis.set(lk, 1)
+        cc = chromecasts.get(target)
+        if cc is not None:
+            mc = cc.media_controller
+            if mc is not None:
+                mc.stop()
         return jsonify({'status_code': 200, 'data': True})
     return jsonify({'status_code': 400, 'error': 'Unsupported Target'})
 
@@ -81,45 +122,49 @@ def unlock(target):
 
 
 @app.route('/v1/users/<mac_address>', methods=['GET'])
-def cast(mac_address, target='Kitchen'):
-    chromecasts = pychromecast.get_chromecasts()
-    device_map = {cc.device.friendly_name: cc for cc in chromecasts}
-    target_cc = device_map.get(target)
+def cast(mac_address, targets=['Kitchen', 'GameRoom']):
+    target_ccs = filter(bool, [chromecasts.get(target) for target in targets])
 
     redis = Cache()
 
-    lk = LOCK_FORMAT % (target)
+    lk = LOCK_FORMAT % ('Kitchen')  # meh.
     locked = int(redis.get(lk) or False)
     if locked:
-        return jsonify({'status_code': 400, 'error': 'Cannot cast, device is locked'})
+        return jsonify({'status_code': 400, 'error': 'Cannot cast, devices locked'})
 
     sk = SEEN_FORMAT % (mac_address)
     seen = int(redis.get(sk) or False)
     if seen:
         return jsonify({'status_code': 200, 'data': {'info': '%s has already been casted today.' % (mac_address)}})
 
-    if target_cc:
-        target_cc.wait()
-        redis = Cache()
-        user = redis.get(mac_address)
-        if user is not None:
-            user = json.loads(user)
-            try:
-                mc = target_cc.media_controller
-                audio = user['audio']
-                mc.play_media(audio,
-                              'music/mp3',
-                              title=random.choice(GREETINGS).format(**user),
-                              thumb='http://www.4cinsights.com/wp-content/uploads/2016/02/4C_Logo_New.png')
-                redis.setex(sk, TTL_EXPIRE, 1)
-                thread = Thread(target=fade, args=(target_cc, mc))
-                thread.start()
-                return jsonify({'status_code': 200, 'data': 'Playing theme for %s' % (user.get('name', '__THE_ONE_FROM_THE_DATABASE__'))})
-            except Exception as e:
-                print e
-                return jsonify({'status_code': 400, 'error': 'Nothing to do'})
-        else:
-            return jsonify({'status_code': 400, 'error': 'User not found'})
+    user = redis.get(mac_address)
+    name = '__THE_ONE_FROM_THE_DATABASE__'
+    audio = None
+    if user is not None:
+        user = json.loads(user)
+        name = user.get('name')
+        try:
+            audio = user['audio']
+        except KeyError:
+            return jsonify({'status_code': 400, 'error': 'No audio to play for user %s' % (name)})
+    else:
+        return jsonify({'status_code': 400, 'error': 'User not found'})
+
+    devices, data = target_ccs, []
+    media_args = (audio, 'music/mp3')
+    media_kwargs = {'title': random.choice(GREETINGS).format(**user),
+                    'thumb': 'http://www.4cinsights.com/wp-content/uploads/2016/02/4C_Logo_New.png'}
+    for target_cc in target_ccs:
+        data.append({'info': 'Playing theme for %s on %s' % (name, target_cc.device.friendly_name)})
+
+    thread = Thread(target=fade, args=(devices, media_args, media_kwargs))
+    thread.start()
+
+    redis.setex(sk, TTL_EXPIRE, 1)
+
+    status_code = 200 if len(data) else 500
+    if status_code == 200:
+        return jsonify({'status_code': 200, 'data': data})
     else:
         return jsonify({'status_code': 500, 'error': 'Target chromecast not found'})
 

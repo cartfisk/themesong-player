@@ -1,8 +1,7 @@
 body {
-  font-family: monospace;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
   background: #EEF3E2;
   color: #00688B;
-
 }
 
 @keyframes fadein {

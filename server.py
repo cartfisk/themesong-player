@@ -73,7 +73,7 @@ def arr_fcall(targets, fname, *args, **kwargs):
 def fade(targets, m_args, m_kwargs):
     arr_fcall(targets, 'play_media', *m_args, **m_kwargs)
     arr_fcall(targets, 'set_volume', 0)
-    arr_fcall(targets, 'wait', 1)
+    arr_fcall(targets, 'wait')
     for _ in xrange(5):
         arr_fcall(targets, 'volume_up')
         time.sleep(.75)

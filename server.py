@@ -198,9 +198,12 @@ def cast(mac_address, targets=['GameRoom']):
         return jsonify({'status_code': 500, 'error': 'Target chromecast not found'})
 
 
-@app.route('/v1/users', methods=['POST'])
+@app.route('/v1/users', methods=['GET', 'POST'])
 def create_user():
     redis = Cache()
+    if request.method == 'GET':
+        with open('users.json', 'r') as f:
+            return jsonify(json.load(f))
     if request.json:
         data = request.json
     elif request.form:

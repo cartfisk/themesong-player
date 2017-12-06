@@ -34,6 +34,7 @@ DEVICE_VOLUME_MAX = {
 SEEN_FORMAT = '%s-seen'
 
 TTL_EXPIRE = 60 * 60 * 16  # reset every 16 hours.
+CAST_DURATION = 35
 
 cast_pool = ThreadPool(2)
 fade_pool = ThreadPool(1)
@@ -85,12 +86,14 @@ def fade(targets):
     arr_fcall(targets, 'set_volume', 0)
     for _ in xrange(4):
         arr_fcall(targets, 'volume_up')
-    time.sleep(35)
+        time.sleep(.5)
+    time.sleep(CAST_DURATION)
     for _ in xrange(4):
         arr_fcall(targets, 'volume_down')
         time.sleep(.5)
     for target in targets:
-        target.media_controller.stop()
+        target.media_controller.skip()
+        target.set_volume(0)
 
 
 @app.route('/')
@@ -134,8 +137,8 @@ def cast(mac_address, targets=['Kitchen', 'GameRoom']):
 
     redis = Cache()
 
-    lk = LOCK_FORMAT % ('Kitchen')  # meh.
-    locked = int(redis.get(lk) or False)
+    glk = LOCK_FORMAT % ('master')  # meh.
+    locked = int(redis.get(glk) or False)
     if locked:
         return jsonify({'status_code': 400, 'error': 'Cannot cast, devices locked'})
 
@@ -165,9 +168,9 @@ def cast(mac_address, targets=['Kitchen', 'GameRoom']):
         data.append({'info': 'Playing theme for %s on %s' % (name, target_cc.device.friendly_name)})
 
     cast_pool.add_task(play, devices, media_args, media_kwargs)
-    cast_pool.wait()
-
+    redis.setex(glk, CAST_DURATION, 1)
     redis.setex(sk, TTL_EXPIRE, 1)
+    cast_pool.wait()
 
     status_code = 200 if len(data) else 500
     if status_code == 200:

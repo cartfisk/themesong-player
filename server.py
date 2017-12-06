@@ -35,6 +35,10 @@ SEEN_FORMAT = '%s-seen'
 
 TTL_EXPIRE = 60 * 60 * 16  # reset every 16 hours.
 CAST_DURATION = 35
+MAX_WAIT_TIME = 120
+
+
+AUTO_LOCK = '__LOCK__'
 
 cast_pool = ThreadPool(2)
 fade_pool = ThreadPool(1)
@@ -67,6 +71,10 @@ class Cache(object):
 chromecasts = {cc.device.friendly_name: cc for cc in pychromecast.get_chromecasts()}
 
 
+def now():
+    return int(time.time())
+
+
 def arr_fcall(targets, fname, *args, **kwargs):
     for t in targets:
         if hasattr(t, fname):
@@ -75,26 +83,30 @@ def arr_fcall(targets, fname, *args, **kwargs):
                 fn(*args, **kwargs)
 
 
-def play(targets, args, kwargs):
+def play(targets, seen_key, args, kwargs):
+    redis = Cache()
+    redis.set(AUTO_LOCK, now())
+    print 'STARTING PLAYBACK...'
     for target in targets:
-        target.wait(3)
         target.play_media(*args, **kwargs)
-    fade(targets)
+    fade(targets, seen_key)
 
 
-def fade(targets):
+def fade(targets, seen_key):
     arr_fcall(targets, 'set_volume', 0)
-    for _ in xrange(4):
+    for _ in xrange(3):
         arr_fcall(targets, 'volume_up')
         time.sleep(.5)
     time.sleep(CAST_DURATION)
-    for _ in xrange(4):
+    for _ in xrange(3):
         arr_fcall(targets, 'volume_down')
         time.sleep(.5)
     for target in targets:
-        target.wait(3)
         target.media_controller.skip()
         target.set_volume(0)
+    redis = Cache()
+    redis.set(AUTO_LOCK, 0)
+    redis.setex(seen_key, TTL_EXPIRE, 1)
 
 
 @app.route('/')
@@ -111,8 +123,8 @@ def devices():
 def lock(target):
     redis = Cache()
     if target in DEVICE_SET:
-        lk = LOCK_FORMAT % (target)
-        redis.set(lk, 1)
+        manual_lock = LOCK_FORMAT % (target)
+        redis.set(manual_lock, 1)
         cc = chromecasts.get(target)
         if cc is not None:
             mc = cc.media_controller
@@ -126,8 +138,8 @@ def lock(target):
 def unlock(target):
     redis = Cache()
     if target in DEVICE_SET:
-        lk = LOCK_FORMAT % (target)
-        redis.set(lk, 0)
+        manual_lock = LOCK_FORMAT % (target)
+        redis.set(manual_lock, 0)
         return jsonify({'status_code': 200, 'data': True})
     return jsonify({'status_code': 400, 'error': 'Unsupported Target'})
 
@@ -138,9 +150,16 @@ def cast(mac_address, targets=['GameRoom']):
 
     redis = Cache()
 
-    glk = LOCK_FORMAT % ('master')  # meh.
-    locked = int(redis.get(glk) or False)
-    if locked:
+    locked_time = int(redis.get(AUTO_LOCK) or False)
+    if locked_time:
+        if now() > locked_time + MAX_WAIT_TIME:
+            redis.set(AUTO_LOCK, 0)
+            print 'UNLOCKING DUE TO EXCEEDING MAX WAIT'
+        else:
+            return jsonify({'status_code': 400, 'error': 'Cannot cast, devices locked'})
+
+    manual_lock = LOCK_FORMAT % ('Kitchen')  # meh.
+    if int(redis.get(manual_lock) or False):
         return jsonify({'status_code': 400, 'error': 'Cannot cast, devices locked'})
 
     sk = SEEN_FORMAT % (mac_address)
@@ -168,10 +187,7 @@ def cast(mac_address, targets=['GameRoom']):
     for target_cc in target_ccs:
         data.append({'info': 'Playing theme for %s on %s' % (name, target_cc.device.friendly_name)})
 
-    cast_pool.add_task(play, devices, media_args, media_kwargs)
-    redis.setex(glk, CAST_DURATION, 1)
-    redis.setex(sk, TTL_EXPIRE, 1)
-    cast_pool.wait()
+    cast_pool.add_task(play, devices, sk, media_args, media_kwargs)
 
     status_code = 200 if len(data) else 500
     if status_code == 200:

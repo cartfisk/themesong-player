@@ -77,7 +77,7 @@ def arr_fcall(targets, fname, *args, **kwargs):
 
 def play(targets, args, kwargs):
     for target in targets:
-        target.wait()
+        target.wait(3)
         target.play_media(*args, **kwargs)
     fade_pool.add_task(fade, targets)
 
@@ -92,7 +92,7 @@ def fade(targets):
         arr_fcall(targets, 'volume_down')
         time.sleep(.5)
     for target in targets:
-        target.wait()
+        target.wait(3)
         target.media_controller.skip()
         target.set_volume(0)
 
@@ -168,6 +168,7 @@ def cast(mac_address, targets=['Kitchen', 'GameRoom']):
     for target_cc in target_ccs:
         data.append({'info': 'Playing theme for %s on %s' % (name, target_cc.device.friendly_name)})
 
+    fade_pool.wait()
     cast_pool.add_task(play, devices, media_args, media_kwargs)
     redis.setex(glk, CAST_DURATION, 1)
     redis.setex(sk, TTL_EXPIRE, 1)

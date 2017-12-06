@@ -94,18 +94,20 @@ def play(targets, seen_key, args, kwargs):
 
 def fade(targets, seen_key):
     arr_fcall(targets, 'set_volume', 0)
-    for _ in xrange(3):
+    for _ in xrange(4):
         arr_fcall(targets, 'volume_up')
         time.sleep(.5)
     time.sleep(CAST_DURATION)
-    for _ in xrange(3):
+    for _ in xrange(4):
         arr_fcall(targets, 'volume_down')
         time.sleep(.5)
     for target in targets:
         target.media_controller.skip()
         target.set_volume(0)
     redis = Cache()
+    print 'UNLOCKING NOW...'
     redis.set(AUTO_LOCK, 0)
+    print 'SETTING %s with %s second expiration' % (seen_key, TTL_EXPIRE)
     redis.setex(seen_key, TTL_EXPIRE, 1)
 
 
@@ -150,7 +152,7 @@ def cast(mac_address, targets=['GameRoom']):
 
     redis = Cache()
 
-    locked_time = int(redis.get(AUTO_LOCK) or False)
+    locked_time = int(redis.get(AUTO_LOCK) or 0)
     if locked_time:
         if now() > locked_time + MAX_WAIT_TIME:
             redis.set(AUTO_LOCK, 0)
@@ -159,11 +161,11 @@ def cast(mac_address, targets=['GameRoom']):
             return jsonify({'status_code': 400, 'error': 'Cannot cast, devices locked'})
 
     manual_lock = LOCK_FORMAT % ('Kitchen')  # meh.
-    if int(redis.get(manual_lock) or False):
+    if int(redis.get(manual_lock) or 0):
         return jsonify({'status_code': 400, 'error': 'Cannot cast, devices locked'})
 
     sk = SEEN_FORMAT % (mac_address)
-    seen = int(redis.get(sk) or False)
+    seen = int(redis.get(sk) or 0)
     if seen:
         return jsonify({'status_code': 200, 'data': {'info': '%s has already been casted today.' % (mac_address)}})
 

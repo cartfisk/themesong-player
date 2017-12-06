@@ -79,7 +79,7 @@ def play(targets, args, kwargs):
     for target in targets:
         target.wait(3)
         target.play_media(*args, **kwargs)
-    fade_pool.add_task(fade, targets)
+    fade(targets)
 
 
 def fade(targets):
@@ -168,7 +168,6 @@ def cast(mac_address, targets=['Kitchen', 'GameRoom']):
     for target_cc in target_ccs:
         data.append({'info': 'Playing theme for %s on %s' % (name, target_cc.device.friendly_name)})
 
-    fade_pool.wait()
     cast_pool.add_task(play, devices, media_args, media_kwargs)
     redis.setex(glk, CAST_DURATION, 1)
     redis.setex(sk, TTL_EXPIRE, 1)
@@ -222,6 +221,13 @@ def delete_user(mac_address):
     print 'Deleting entry for %s' % (mac_address)
     success = redis.delete(mac_address) > 0
     return jsonify({'status_code': 200, 'data': success})
+
+
+@app.route('/v1/reset', methods=['GET'])
+def reset_seen():
+    redis = Cache()
+    n = redis.delete(*redis.keys('*-seen'))
+    return jsonify({'status_code': 200, 'data': n})
 
 
 if __name__ == '__main__':

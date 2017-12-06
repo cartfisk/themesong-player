@@ -92,6 +92,7 @@ def fade(targets):
         arr_fcall(targets, 'volume_down')
         time.sleep(.5)
     for target in targets:
+        target.wait()
         target.media_controller.skip()
         target.set_volume(0)
 

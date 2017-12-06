@@ -133,7 +133,7 @@ def unlock(target):
 
 
 @app.route('/v1/users/<mac_address>', methods=['GET'])
-def cast(mac_address, targets=['Kitchen', 'GameRoom']):
+def cast(mac_address, targets=['GameRoom']):
     target_ccs = filter(bool, [chromecasts.get(target) for target in targets])
 
     redis = Cache()

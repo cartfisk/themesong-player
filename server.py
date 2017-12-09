@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request, render_template
-from pool import ThreadPool
+from cache import Cache
+from utils import now, arr_fcall
 
-import redis as _redis
 import json
 import pychromecast
 import random
@@ -39,76 +39,20 @@ MAX_WAIT_TIME = 120
 
 
 AUTO_LOCK = '__LOCK__'
-
-cast_pool = ThreadPool(2)
-fade_pool = ThreadPool(1)
-
-
-class Cache(object):
-    db = _redis.StrictRedis(host='localhost', port=6379, db=0)
-
-    def __init__(self):
-        with open('users.json', 'w') as f:
-            data = []
-            for k in self.db.keys():
-                if '-' in k or '_' in k:
-                    continue
-                try:
-                    data.append(json.loads(self.db.get(k)))
-                except Exception:
-                    continue
-            s = json.dumps(data,
-                           indent=4,
-                           sort_keys=True,
-                           separators=(',', ': '),
-                           ensure_ascii=False)
-            f.write(s)
-
-    def __getattr__(self, name):
-        return getattr(self.db, name)
-
+PLAY_QUEUE = 'play'
+FADE_QUEUE = 'fade'
 
 chromecasts = {cc.device.friendly_name: cc for cc in pychromecast.get_chromecasts()}
-
-
-def now():
-    return int(time.time())
-
-
-def arr_fcall(targets, fname, *args, **kwargs):
-    for t in targets:
-        if hasattr(t, fname):
-            fn = getattr(t, fname)
-            if hasattr(fn, '__call__'):
-                fn(*args, **kwargs)
 
 
 def play(targets, seen_key, args, kwargs):
     redis = Cache()
     redis.set(AUTO_LOCK, now())
     print 'STARTING PLAYBACK...'
-    for target in targets:
-        target.play_media(*args, **kwargs)
-    fade(targets, seen_key)
-
-
-def fade(targets, seen_key):
-    arr_fcall(targets, 'set_volume', 0)
-    for _ in xrange(4):
-        arr_fcall(targets, 'volume_up')
-        time.sleep(.5)
-    time.sleep(CAST_DURATION)
-    for _ in xrange(4):
-        arr_fcall(targets, 'volume_down')
-        time.sleep(.5)
-    for target in targets:
-        target.media_controller.skip()
-        target.set_volume(0)
-    redis = Cache()
-    print 'UNLOCKING NOW...'
-    redis.set(AUTO_LOCK, 0)
-    print 'SETTING %s with %s second expiration' % (seen_key, TTL_EXPIRE)
-    redis.setex(seen_key, TTL_EXPIRE, 1)
+    play_msg = json.dumps({'type': 'play', 'targets': targets, 'seen_key': seen_key, 'args': args, 'kwargs': kwargs})
+    fade_msg = json.dumps({'type': 'fade', 'targets': targets, 'seen_key': seen_key})
+    redis.publish(PLAY_QUEUE, play_msg)
+    redis.publish(FADE_QUEUE, fade_msg)
 
 
 @app.route('/')
@@ -147,7 +91,7 @@ def unlock(target):
 
 
 @app.route('/v1/users/<mac_address>', methods=['GET'])
-def cast(mac_address, targets=['GameRoom']):
+def cast(mac_address, targets=['Kitchen', 'GameRoom']):
     target_ccs = filter(bool, [chromecasts.get(target) for target in targets])
 
     redis = Cache()
@@ -182,14 +126,14 @@ def cast(mac_address, targets=['GameRoom']):
     else:
         return jsonify({'status_code': 400, 'error': 'User not found'})
 
-    devices, data = target_ccs, []
+    devices, data = targets, []
     media_args = (audio, 'music/mp3')
     media_kwargs = {'title': random.choice(GREETINGS).format(**user),
                     'thumb': 'http://www.4cinsights.com/wp-content/uploads/2016/02/4C_Logo_New.png'}
     for target_cc in target_ccs:
         data.append({'info': 'Playing theme for %s on %s' % (name, target_cc.device.friendly_name)})
 
-    cast_pool.add_task(play, devices, sk, media_args, media_kwargs)
+    play(devices, sk, media_args, media_kwargs)
 
     status_code = 200 if len(data) else 500
     if status_code == 200:

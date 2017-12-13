@@ -1,7 +1,7 @@
 # http-chromecast-emulsion
 Basic Python (Flask) API that maps a MAC address to an audio file and streams to ChromeCast via CASTV2
 
-This was written as part of an implementation of [@buntine](https://github.com/buntine)'s [Hulkamania project](https://dev.to/buntine/hulkamania-or-how-i-made-our-office-play-personalized-entrance-theme-music) at 4C Insights' Chicago office.
+This was written as part of an implementation of [@buntine](https://github.com/buntine)'s [Hulkamania project](https://dev.to/buntine/hulkamania-or-how-i-made-our-office-play-personalized-entrance-theme-music) at [4C Insights](https://github.com/VoxsupInc)' Chicago office.
 
 ### Running the Server
 

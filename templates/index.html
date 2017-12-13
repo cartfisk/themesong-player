@@ -27,20 +27,20 @@
                     </div>
                 </form>
             </div>
-            <div class="admin-wrap" hidden>
+            <div class="admin-wrap">
               <form action="/v1/restart" method="get">
                 <div class="button">
-                  <button id="restart-server-button" type="submit" disabled=true>Restart Server</button>
+                  <button id="restart-server-button" type="submit" disabled=true hidden>Restart Server</button>
                 </div>
               </form>
               <form action="/v1/devices/lock/Kitchen" method="get">
                 <div class="button">
-                  <button id="lock-kitchen" type="submit" disabled=true>Lock Kitchen</button>
+                  <button id="lock-kitchen" type="submit" disabled=true hidden>Lock Kitchen</button>
                 </div>
               </form>
               <form action="/v1/devices/unlock/Kitchen" method="get">
                 <div class="button">
-                  <button id="unlock-kitchen" type="submit" disabled=true>Unlock Kitchen</button>
+                  <button id="unlock-kitchen" type="submit" disabled=true hidden>Unlock Kitchen</button>
                 </div>
               </form>
             </div>

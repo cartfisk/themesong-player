@@ -14,7 +14,11 @@ function handleKeyDown(e) {
       case 'racecar':
         window.admin = true;
 
-        let adminButtons = [document.getElementById("restart-server-button"), document.getElementById("lock-kitchen"), document.getElementById("unlock-kitchen")];
+        let adminButtons = [
+          document.getElementById("restart-server-button"),
+          document.getElementById("lock-kitchen"),
+          document.getElementById("unlock-kitchen")
+        ];
         let consoleOut = document.getElementById("console-output");
 
         const unHide = (element) => {
@@ -26,20 +30,30 @@ function handleKeyDown(e) {
 
         console.log('Congratulations! You are now an admin');
         consoleOut.innerHTML = 'Congratulations! You are now an admin';
+
         purgeBuffer();
         break;
+
       case 'q1':
         if (window.admin) {
-          get('v1/devices/lock/Kitchen', function() { console.log('Kitchen Chromecast is now LOCKED.'); });
+          get('v1/devices/lock/Kitchen', function() {
+            console.log('Kitchen Chromecast is now LOCKED.');
+            consoleOut.innerHTML = 'Kitchen Chromecast is now LOCKED.';
+          });
         }
         purgeBuffer();
         break;
+
       case 'q2':
         if (window.admin) {
-          get('v1/devices/unlock/Kitchen', function() { console.log('Kitchen Chromecast is now UNLOCKED.'); });
+          get('v1/devices/unlock/Kitchen', function() {
+            console.log('Kitchen Chromecast is now UNLOCKED.');
+            consoleOut.innerHTML = 'Kitchen Chromecast is now UNLOCKED.';
+          });
         }
         purgeBuffer();
         break;
+
       default:
         break;
     }

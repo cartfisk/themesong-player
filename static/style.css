@@ -32,6 +32,15 @@ body {
   border-bottom: 1px #00688B solid;
 }
 
+.admin-wrap {
+  display: inline-flex;
+  padding: 15px, 0, 0, 0;
+}
+
+.admin-wrap form {
+  margin: 10px;
+}
+
 input {
   font-size: 16px;
   width: 100%;
@@ -54,6 +63,7 @@ input:focus {
 button {
   background-color: #28a745;
   background-image: linear-gradient(-180deg, #34d058 0%, #28a745 90%);
+  border-radius: 8px;
   color: white;
   font-weight: bold;
   width: 100%;

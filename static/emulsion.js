@@ -13,7 +13,19 @@ function handleKeyDown(e) {
     switch (window.textBuffer) {
       case 'racecar':
         window.admin = true;
+
+        let adminButtons = [document.getElementById("restart-server-button"), document.getElementById("lock-kitchen"), document.getElementById("unlock-kitchen")];
+        let consoleOut = document.getElementById("console-output");
+
+        const unHide = (element) => {
+          element.disabled = false;
+          element.removeAttribute("hidden");
+        }
+
+        adminButtons.forEach((b) => unHide(b));
+
         console.log('Congratulations! You are now an admin');
+        consoleOut.innerHTML = 'Congratulations! You are now an admin';
         purgeBuffer();
         break;
       case 'q1':

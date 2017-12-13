@@ -130,7 +130,7 @@ def cast(mac_address, targets=['Kitchen', 'GameRoom']):
     devices, data = targets, []
     media_args = (audio, 'music/mp3')
     media_kwargs = {'title': random.choice(GREETINGS).format(**user),
-                    'thumb': 'http://10.1.242.213/static/4c-logo-white.png'}
+                    'thumb': 'http://10.1.242.213:8080/static/4c-logo-white.png'}
     for target_cc in target_ccs:
         data.append({'info': 'Playing theme for %s on %s' % (name, target_cc.device.friendly_name)})
 
@@ -211,4 +211,4 @@ def restart():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80, debug=True)
+    app.run(host='0.0.0.0', port=8080, debug=True)

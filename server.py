@@ -129,7 +129,7 @@ def cast(mac_address, targets=['Kitchen', 'GameRoom']):
     devices, data = targets, []
     media_args = (audio, 'music/mp3')
     media_kwargs = {'title': random.choice(GREETINGS).format(**user),
-                    'thumb': 'http://www.4cinsights.com/wp-content/uploads/2016/02/4C_Logo_New.png'}
+                    'thumb': 'http://10.1.242.213:8080/static/4c-logo-white.png'}
     for target_cc in target_ccs:
         data.append({'info': 'Playing theme for %s on %s' % (name, target_cc.device.friendly_name)})
 

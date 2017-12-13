@@ -192,5 +192,12 @@ def reset_seen():
     return jsonify({'status_code': 200, 'data': n})
 
 
+@app.route('/v1/reset/<mac_address>', methods=['GET'])
+def reset_user_seen(mac_address):
+    redis = Cache()
+    n = redis.delete(*redis.keys('%s-seen' % (mac_address)))
+    return jsonify({'status_code': 200, 'data': n})
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)

@@ -36,7 +36,7 @@ SEEN_FORMAT = '%s-seen'
 
 TTL_EXPIRE = 60 * 60 * 16  # reset every 16 hours.
 CAST_DURATION = 35
-MAX_WAIT_TIME = 120
+MAX_WAIT_TIME = 37
 
 
 AUTO_LOCK = '__LOCK__'

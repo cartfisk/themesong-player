@@ -10,7 +10,7 @@ Jinja2==2.10
 MarkupSafe==1.0
 netifaces==0.10.6
 protobuf==3.5.0.post1
-PyChromecast==1.0.2
+PyChromecast==2.5.0
 redis==2.10.6
 requests==2.18.4
 six==1.11.0

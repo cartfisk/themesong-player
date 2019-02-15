@@ -1,11 +1,10 @@
 from flask import Flask, jsonify, request, render_template
 from cache import Cache
-from utils import now, arr_fcall
+from utils import now
 
 import json
 import pychromecast
 import random
-import time
 
 app = Flask(__name__)
 
@@ -48,7 +47,7 @@ chromecasts = {cc.device.friendly_name: cc for cc in pychromecast.get_chromecast
 def play(targets, seen_key, args, kwargs):
     redis = Cache()
     redis.set(AUTO_LOCK, now())
-    print 'STARTING PLAYBACK...'
+    print('STARTING PLAYBACK...')
     play_msg = json.dumps({'type': 'play', 'targets': targets, 'seen_key': seen_key, 'args': args, 'kwargs': kwargs})
     fade_msg = json.dumps({'type': 'fade', 'targets': targets, 'seen_key': seen_key})
     redis.publish(PLAY_QUEUE, play_msg)
@@ -100,7 +99,7 @@ def cast(mac_address, targets=['Kitchen', 'GameRoom']):
     if locked_time:
         if now() > locked_time + MAX_WAIT_TIME:
             redis.set(AUTO_LOCK, 0)
-            print 'UNLOCKING DUE TO EXCEEDING MAX WAIT'
+            print('UNLOCKING DUE TO EXCEEDING MAX WAIT')
         else:
             return jsonify({'status_code': 400, 'error': 'Cannot cast, devices locked'})
 
@@ -152,7 +151,7 @@ def create_user():
         data = request.json
     elif request.form:
         data = request.form
-    print 'Attempting to create user: %s' % data
+    print('Attempting to create user: %s' % data)
     try:
         address = data['address']
         if address in ['', None]:
@@ -162,7 +161,7 @@ def create_user():
     except (KeyError, ValueError):
         return jsonify({'status_code': 400, 'error': 'MAC Address not provided'})
     except Exception as e:
-        print e
+        print(e)
         return jsonify({'status_code': 500, 'error': 'Something went wrong'})
 
 
@@ -170,7 +169,7 @@ def create_user():
 def update_user(mac_address):
     redis = Cache()
     data = request.json
-    print 'Attempting to update user for address %s with: %s' % (mac_address, data)
+    print('Attempting to update user for address %s with: %s' % (mac_address, data))
     user = json.loads(redis.get(mac_address))
     if user is not None:
         user.update(data)
@@ -183,7 +182,7 @@ def update_user(mac_address):
 @app.route('/v1/users/<mac_address>', methods=['DELETE'])
 def delete_user(mac_address):
     redis = Cache()
-    print 'Deleting entry for %s' % (mac_address)
+    print('Deleting entry for %s' % (mac_address))
     success = redis.delete(mac_address) > 0
     return jsonify({'status_code': 200, 'data': success})
 

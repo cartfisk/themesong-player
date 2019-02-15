@@ -1,5 +1,5 @@
 from cache import Cache
-from utils import now, arr_fcall
+from utils import arr_fcall
 
 import json
 import sys
@@ -29,11 +29,11 @@ def unpack(d, keys):
 
 def fade(targets, seen_key):
     arr_fcall(targets, 'set_volume', 0)
-    for _ in xrange(4):
+    for _ in range(4):
         arr_fcall(targets, 'volume_up')
         time.sleep(.5)
     time.sleep(CAST_DURATION)
-    for _ in xrange(4):
+    for _ in range(4):
         arr_fcall(targets, 'volume_down')
         time.sleep(.5)
     for target in targets:

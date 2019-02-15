@@ -9,7 +9,7 @@ class Cache(object):
         with open('users.json', 'w') as f:
             data = []
             for k in self.db.keys():
-                if '-' in k or '_' in k:
+                if b'-' in k or b'_' in k:
                     continue
                 try:
                     data.append(json.loads(self.db.get(k)))

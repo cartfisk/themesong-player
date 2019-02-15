@@ -5,6 +5,7 @@ from utils import now
 import json
 import pychromecast
 import random
+import subprocess
 
 app = Flask(__name__)
 
@@ -199,6 +200,13 @@ def reset_user_seen(mac_address):
     redis = Cache()
     n = redis.delete(*redis.keys('%s-seen' % (mac_address)))
     return jsonify({'status_code': 200, 'data': n})
+
+
+@app.route('/v1/restart', methods=['GET'])
+def restart():
+    shell_script = "./restart.sh"
+    subprocess.check_output([shell_script], stderr=subprocess.STDOUT)
+    return jsonify({'status_code': 200, 'data': True})
 
 
 if __name__ == '__main__':

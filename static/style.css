@@ -1,0 +1,74 @@
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  background: #EEF3E2;
+  color: #00688B;
+}
+
+@keyframes fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin: auto 0;
+  animation: fadein 1.5s;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: bold;
+  padding: 15px 10%;
+  cursor: default;
+}
+
+.input-wrap, .info {
+  display: flex;
+  padding: 15px 10%;
+}
+
+.admin-wrap {
+  display: inline-flex;
+  padding: 15px, 0, 0, 0;
+}
+
+.admin-wrap form {
+  margin: 10px;
+}
+
+#message {
+    padding-top: 10px;
+}
+
+input {
+  font-size: 16px;
+  width: 100%;
+  padding: 8px 8px;
+  margin: 8px 0;
+  box-sizing: border-box;
+  border-style: groove;
+  border-radius: 8px;
+}
+
+input:hover {
+  border: 2px solid #048EBD;
+}
+
+input:focus {
+  outline: unset;
+  border: 2px solid #048EBD;
+}
+
+button {
+  background-color: #28a745;
+  background-image: linear-gradient(-180deg, #34d058 0%, #28a745 90%);
+  border-radius: 8px;
+  color: white;
+  font-weight: bold;
+  width: 100%;
+  height: 25px;
+  cursor: pointer;
+}
